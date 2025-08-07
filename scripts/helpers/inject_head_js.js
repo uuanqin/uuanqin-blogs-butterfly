@@ -55,7 +55,6 @@ hexo.extend.helper.register('inject_head_js', function () {
         if (!${pjax.enable} && key.startsWith('pjax')) return
         const globalFn = parent.globalFn || {}
         globalFn[key] = globalFn[key] || {}
-        if (name && globalFn[key][name]) return
         globalFn[key][name || Object.keys(globalFn[key]).length] = fn
         parent.globalFn = globalFn
       }
@@ -90,7 +89,7 @@ hexo.extend.helper.register('inject_head_js', function () {
         darkmodeJs += `
           const mediaQueryDark = window.matchMedia('(prefers-color-scheme: dark)')
           const mediaQueryLight = window.matchMedia('(prefers-color-scheme: light)')
-          
+
           if (theme === undefined) {
             if (mediaQueryLight.matches) activateLightMode()
             else if (mediaQueryDark.matches) activateDarkMode()

@@ -3,6 +3,7 @@
 const { truncateContent, postDesc } = require('../common/postDesc')
 const { prettyUrls } = require('hexo-util')
 const crypto = require('crypto')
+const moment = require('moment-timezone')
 
 hexo.extend.helper.register('truncate', truncateContent)
 
@@ -80,7 +81,7 @@ hexo.extend.helper.register('findArchivesTitle', function (page, menu, date) {
   return loop(menu) || defaultTitle
 })
 
-hexo.extend.helper.register('getBgPath', path => {
+hexo.extend.helper.register('getBgPath', function(path) {
   if (!path) return ''
 
   const absoluteUrlPattern = /^(?:[a-z][a-z\d+.-]*:)?\/\//i
@@ -90,8 +91,62 @@ hexo.extend.helper.register('getBgPath', path => {
   if (colorPattern.test(path)) {
     return `background-color: ${path};`
   } else if (absoluteUrlPattern.test(path) || relativeUrlPattern.test(path)) {
-    return `background-image: url(${path});`
+    return `background-image: url(${this.url_for(path)});`
   } else {
     return `background: ${path};`
   }
+})
+
+hexo.extend.helper.register('shuoshuoFN', (data, page) => {
+  const { limit } = page
+  let finalResult = ''
+
+  // Check if limit.value is a valid date
+  const isValidDate = date => !isNaN(Date.parse(date))
+
+  // order by date
+  const orderByDate = data => data.sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
+
+  // Apply number limit or time limit conditionally
+  const limitData = data => {
+    if (limit && limit.type === 'num' && limit.value > 0) {
+      return data.slice(0, limit.value)
+    } else if (limit && limit.type === 'date' && isValidDate(limit.value)) {
+      const limitDate = Date.parse(limit.value)
+      return data.filter(item => Date.parse(item.date) >= limitDate)
+    }
+
+    return data
+  }
+
+  orderByDate(data)
+  finalResult = limitData(data)
+
+  // This is a hack method, because hexo treats time as UTC time
+  // so you need to manually convert the time zone
+  finalResult.forEach(item => {
+    const utcDate = moment.utc(item.date).format('YYYY-MM-DD HH:mm:ss')
+    item.date = moment.tz(utcDate, hexo.config.timezone).format('YYYY-MM-DD HH:mm:ss')
+  })
+
+  return finalResult
+})
+
+hexo.extend.helper.register('getPageType', (page, isHome) => {
+  const { layout, tag, category, type, archive } = page
+  if (layout) return layout
+  if (tag) return 'tag'
+  if (category) return 'category'
+  if (archive) return 'archive'
+  if (type) {
+    if (type === 'tags' || type === 'categories') return type
+    else return 'page'
+  }
+  if (isHome) return 'home'
+  return 'post'
+})
+
+hexo.extend.helper.register('getVersion', () => {
+  const { version } = require('../../package.json')
+  return { hexo: hexo.version, theme: version }
 })
