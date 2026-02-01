@@ -6,6 +6,25 @@
 
 <img src="./source/img/butterfly-icon.png" width="150" height="150" />
 
+# 半方池水半方田 Butterfly 主题仓库
+
+本仓库为 hexo-theme-butterfly 主题魔改备份仓库。
+
+本地分支：
+
+- master 用于接收官方主题更新
+- uuanqin 用于合并魔改与官方更新，并作为最终效果分支
+
+远程仓库 origin：
+
+- 拉取分支：https://github.com/jerryc127/hexo-theme-butterfly.git
+- 推送分支：https://github.com/uuanqin/uuanqin-blogs-butterfly.git
+
+一些有用的指令：
+
+- `git remote -v`：查看当前远程仓库
+- `git remote set-url --push origin https://github.com/uuanqin/xxx.git` ：更改远程仓库 origin 的推送分支
+
 # hexo-theme-butterfly
 
 ![master version](https://img.shields.io/github/package-json/v/jerryc127/hexo-theme-butterfly/master?color=%231ab1ad&label=master)
