@@ -6,7 +6,25 @@
 
 <img src="./source/img/butterfly-icon.png" width="150" height="150" />
 
-# 半方池水半方田 Butterfly 主题仓库
+# hexo-theme-butterfly
+
+![master version](https://img.shields.io/github/package-json/v/jerryc127/hexo-theme-butterfly/master?color=%231ab1ad&label=master)
+![master version](https://img.shields.io/github/package-json/v/jerryc127/hexo-theme-butterfly/dev?label=dev)
+![https://img.shields.io/npm/v/hexo-theme-butterfly?color=%09%23bf00ff](https://img.shields.io/npm/v/hexo-theme-butterfly?color=%09%23bf00ff)
+![hexo version](https://img.shields.io/badge/hexo-5.3.0+-0e83c)
+![license](https://img.shields.io/github/license/jerryc127/hexo-theme-butterfly?color=FF5531)
+
+📢 Demo: [Butterfly](https://butterfly.js.org/) / [CrazyWong](https://blog.crazywong.com/)
+
+📖 Docs: [English](https://butterfly.js.org/en/posts/butterfly-docs-en-get-started/) / [Chinese](https://butterfly.js.org/posts/21cfbf15/)
+
+![](https://cdn.jsdelivr.net/gh/jerryc127/CDN@m2/img/theme-butterfly-readme.png)
+
+</div>
+
+---
+
+## 半方池水半方田 Butterfly 主题仓库
 
 本仓库为 hexo-theme-butterfly 主题魔改备份仓库。
 
@@ -25,23 +43,6 @@
 - `git remote -v`：查看当前远程仓库
 - `git remote set-url --push origin https://github.com/uuanqin/xxx.git` ：更改远程仓库 origin 的推送分支
 
-# hexo-theme-butterfly
-
-![master version](https://img.shields.io/github/package-json/v/jerryc127/hexo-theme-butterfly/master?color=%231ab1ad&label=master)
-![master version](https://img.shields.io/github/package-json/v/jerryc127/hexo-theme-butterfly/dev?label=dev)
-![https://img.shields.io/npm/v/hexo-theme-butterfly?color=%09%23bf00ff](https://img.shields.io/npm/v/hexo-theme-butterfly?color=%09%23bf00ff)
-![hexo version](https://img.shields.io/badge/hexo-5.3.0+-0e83c)
-![license](https://img.shields.io/github/license/jerryc127/hexo-theme-butterfly?color=FF5531)
-
-📢 Demo: [Butterfly](https://butterfly.js.org/) / [CrazyWong](https://blog.crazywong.com/)
-
-📖 Docs: [English](https://butterfly.js.org/en/posts/butterfly-docs-en-get-started/) / [Chinese](https://butterfly.js.org/posts/21cfbf15/)
-
-![](https://cdn.jsdelivr.net/gh/jerryc127/CDN@m2/img/theme-butterfly-readme.png)
-
-</div>
-
----
 
 ## 💻 Installation
 
