@@ -1,0 +1,40 @@
+// 预处理：过滤空值、整理数据
+-
+    const hasValidCoverModel = page.cover_model && page.cover_model.trim() !== '';
+    let assistantModels = [];
+    if (page.assistant_model) {
+        // 转为数组（兼容单个/多个）
+        const rawList = Array.isArray(page.assistant_model) ? page.assistant_model : [page.assistant_model];
+        // 过滤空值、空字符串（去除前后空格后判断）
+        assistantModels = rawList.filter(item => item && item.trim() !== '');
+    }
+    const needRenderModule = hasValidCoverModel || assistantModels.length > 0;
+
+// 仅当有有效内容时，才渲染整个模块
+if (needRenderModule)
+    .post-ai-info
+        // 1. 封面图生成模型（仅有效内容时渲染）
+        if (hasValidCoverModel)
+            .post-ai-info__cover-model
+                span.post-ai-info-meta
+                    i.fas.fa-image.fa-fw
+                    = '封面生成'
+                span.post-ai-info-content
+                    = page.cover_model.trim()
+                    // Prompt 气泡（仅当 cover_prompt 存在且非空时显示）
+                    if (page.cover_prompt && page.cover_prompt.trim() !== '')
+                        .prompt-tooltip
+                            span.prompt-tooltip__label Prompt
+                            span.prompt-tooltip__content= page.cover_prompt.trim()
+
+        // 文章助手模型（仅有效列表时渲染）
+        if (assistantModels.length > 0)
+            .post-ai-info__assistant-model
+                span.post-ai-info-meta
+                    i.fas.fa-robot.fa-fw
+                    = '文章助手'
+                // 列表容器：展示过滤后的有效模型
+                .post-ai-info-assistant-list
+                    each model, index in assistantModels
+                        // 去除模型名前后空格，保证展示整洁
+                        .post-ai-info-assistant-item(role="listitem")= model.trim()

@@ -1,0 +1,112 @@
+// AI 信息模块样式
+.post-ai-info
+  position: relative
+  margin: 10px 0 10px
+  padding: 0 16px
+  border: 1px solid #f6ecff
+  transition: box-shadow .3s ease-in-out
+  addBorderRadius()
+
+  &:hover
+    box-shadow: 0 0 8px 0 rgba(232, 237, 250, .6), 0 2px 4px 0 rgba(232, 237, 250, .5)
+
+  .post-ai-info
+    &-meta
+      color: #ac63f1
+      font-weight: bold
+      i
+        margin-right: 3px
+
+    &-content
+      padding-left: 6px
+      word-break: break-word
+      position: relative
+      display: inline-flex
+      align-items: center
+
+    // 调整：文章助手行 - 取消flex，恢复普通流布局
+    &__cover-model,
+    &__assistant-model
+      margin: 8px 0
+      line-height: 1.6
+
+    // 新增：文章助手列表容器（纯文字样式）
+    &-assistant-list
+      display: inline // 行内展示，和普通文字一致
+      padding-left: 6px // 和原有内容缩进一致
+      margin: 0 // 清除默认边距
+      list-style: none // 隐藏默认列表样式
+
+    // 新增：单个模型项（纯文字+空格分隔）
+    &-assistant-item
+      display: inline // 行内排列
+      color: inherit // 继承父级文字颜色
+      font-size: inherit // 继承父级字体大小
+      font-weight: normal // 取消加粗
+      // 多个模型时，在项后加空格分隔（最后一项不加）
+      &:not(:last-child):after
+        content: '，' // 用中文逗号+空格分隔，更符合中文阅读习惯
+        margin-right: 2px
+
+  // Prompt 悬浮气泡样式（完全保留，无修改）
+  .prompt-tooltip
+    display: inline-flex
+    align-items: center
+    position: relative
+    margin-left: 8px
+    cursor: help
+
+    &__label
+      display: inline-block
+      padding: 1px 6px
+      background: #ac63f1
+      color: #fff
+      font-size: 10px
+      font-weight: 700
+      border-radius: 8px
+      transition: all .2s ease
+      line-height: 1.4
+
+    &__content
+      position: absolute
+      top: calc(100% + 8px)
+      left: 50%
+      transform: translateX(-50%)
+      min-width: 280px
+      max-width: 400px
+      padding: 8px 12px
+      background: #fff
+      color: #333
+      border: 1px solid #e8d9ff
+      border-radius: 6px
+      box-shadow: 0 2px 8px rgba(172, 99, 241, 0.15)
+      font-size: 11px
+      font-weight: 600
+      line-height: 1.5
+      word-break: break-all
+      opacity: 0
+      visibility: hidden
+      transition: all .2s ease
+      z-index: 999
+
+      &:before
+        content: ''
+        position: absolute
+        top: -6px
+        left: 50%
+        transform: translateX(-50%) rotate(45deg)
+        width: 12px
+        height: 12px
+        background: #fff
+        border: 1px solid #e8d9ff
+        border-right: none
+        border-bottom: none
+
+    &:hover
+      .prompt-tooltip__label
+        background: #8b44d4
+
+      .prompt-tooltip__content
+        opacity: 1
+        visibility: visible
+        top: calc(100% + 10px)
