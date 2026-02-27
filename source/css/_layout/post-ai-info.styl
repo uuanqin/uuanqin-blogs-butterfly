@@ -1,9 +1,26 @@
 // AI 信息模块样式
+
+:root
+  --post-ai-info-border-color: #f6ecff
+  --post-ai-info-prompt-tooltip-bg-color: #fff
+  --post-ai-info-prompt-tooltip-text-color: #333
+  --post-ai-info-prompt-tooltip-border-color: #e8d9ff
+  --post-ai-info-prompt-text-color: #fff
+  --post-ai-info-prompt-bg-color: #ac63f1
+
+[data-theme='dark']
+  --post-ai-info-border-color: var(--light-grey)
+  --post-ai-info-prompt-tooltip-bg-color: #2d2d3f
+  --post-ai-info-prompt-tooltip-text-color: #e0e0e8
+  --post-ai-info-prompt-tooltip-border-color: #4b306b
+  --post-ai-info-prompt-text-color: rgba(255, 255, 255, 0.68)
+  --post-ai-info-prompt-bg-color: #8b44d4
+
 .post-ai-info
   position: relative
   margin: 10px 0 10px
   padding: 0 16px
-  border: 1px solid #f6ecff
+  border: 1px solid var(--post-ai-info-border-color)
   transition: box-shadow .3s ease-in-out
   addBorderRadius()
 
@@ -59,8 +76,8 @@
     &__label
       display: inline-block
       padding: 1px 6px
-      background: #ac63f1
-      color: #fff
+      background: var(--post-ai-info-prompt-bg-color)
+      color: var(--post-ai-info-prompt-text-color)
       font-size: 10px
       font-weight: 700
       border-radius: 8px
@@ -75,9 +92,9 @@
       min-width: 280px
       max-width: 400px
       padding: 8px 12px
-      background: #fff
-      color: #333
-      border: 1px solid #e8d9ff
+      background: var(--post-ai-info-prompt-tooltip-bg-color)
+      color: var(--post-ai-info-prompt-tooltip-text-color)
+      border: 1px solid var(--post-ai-info-prompt-tooltip-border-color)
       border-radius: 6px
       box-shadow: 0 2px 8px rgba(172, 99, 241, 0.15)
       font-size: 11px
@@ -97,8 +114,8 @@
         transform: translateX(-50%) rotate(45deg)
         width: 12px
         height: 12px
-        background: #fff
-        border: 1px solid #e8d9ff
+        background: var(--post-ai-info-prompt-tooltip-bg-color)
+        border: 1px solid var(--post-ai-info-prompt-tooltip-border-color)
         border-right: none
         border-bottom: none
 
