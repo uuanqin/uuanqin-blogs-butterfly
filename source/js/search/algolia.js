@@ -26,7 +26,12 @@ window.addEventListener('load', () => {
   const openSearch = () => {
     btf.overflowPaddingR.add()
     animateElements(true)
-    setTimeout(() => { document.querySelector('#algolia-search .ais-SearchBox-input').focus() }, 100)
+    showLoading(false)
+
+    setTimeout(() => {
+      const searchInput = document.querySelector('#algolia-search-input .ais-SearchBox-input')
+      if (searchInput) searchInput.focus()
+    }, 100)
 
     const handleEscape = event => {
       if (event.code === 'Escape') {
@@ -55,9 +60,38 @@ window.addEventListener('load', () => {
     document.querySelector('#algolia-search .search-close-button').addEventListener('click', closeSearch)
   }
 
-  const cutContent = (content) => {
+  const cutContent = content => {
     if (!content) return ''
-    const firstOccur = content.indexOf('<mark>')
+
+    let contentStr = ''
+    if (typeof content === 'string') {
+      contentStr = content.trim()
+    } else if (typeof content === 'object') {
+      if (content.value !== undefined) {
+        contentStr = String(content.value).trim()
+        if (!contentStr) return ''
+      } else if (content.matchedWords || content.matchLevel || content.fullyHighlighted !== undefined) {
+        return ''
+      } else {
+        try {
+          contentStr = JSON.stringify(content).trim()
+          if (contentStr === '{}' || contentStr === '[]' || contentStr === '""') {
+            return ''
+          }
+        } catch (e) {
+          return ''
+        }
+      }
+    } else if (content.toString && typeof content.toString === 'function') {
+      contentStr = content.toString().trim()
+      if (contentStr === '[object Object]' || contentStr === '[object Array]') {
+        return ''
+      }
+    } else {
+      return ''
+    }
+
+    const firstOccur = contentStr.indexOf('<mark>')
     let start = firstOccur - 30
     let end = firstOccur + 120
     let pre = ''
@@ -70,120 +104,454 @@ window.addEventListener('load', () => {
       pre = '...'
     }
 
-    if (end > content.length) {
-      end = content.length
+    if (end > contentStr.length) {
+      end = contentStr.length
     } else {
       post = '...'
     }
 
-    return `${pre}${content.substring(start, end)}${post}`
+    // Ensure we don't cut off HTML tags in the middle
+    let substr = contentStr.substring(start, end)
+
+    // Handle tag completeness
+    // Check for incomplete opening tags at the beginning
+    const firstCloseBracket = substr.indexOf('>')
+    const firstOpenBracket = substr.indexOf('<')
+
+    // If there's a closing bracket but no opening bracket before it, we've cut a tag
+    if (firstCloseBracket !== -1 && (firstOpenBracket === -1 || firstCloseBracket < firstOpenBracket)) {
+      substr = substr.substring(firstCloseBracket + 1)
+    }
+
+    // Check for incomplete closing tags at the end
+    const lastOpenBracket = substr.lastIndexOf('<')
+    const lastCloseBracket = substr.lastIndexOf('>')
+
+    // If there's an opening bracket after the last closing bracket, we've cut a tag
+    if (lastOpenBracket !== -1 && lastOpenBracket > lastCloseBracket) {
+      substr = substr.substring(0, lastOpenBracket)
+    }
+
+    // Balance tags in the substring
+    const tagStack = []
+    let balancedStr = ''
+    let i = 0
+
+    while (i < substr.length) {
+      if (substr[i] === '<') {
+        // Check if it's a closing tag
+        if (substr[i + 1] === '/') {
+          const closeTagEnd = substr.indexOf('>', i)
+          if (closeTagEnd !== -1) {
+            const closeTagName = substr.substring(i + 2, closeTagEnd)
+            // Remove matching opening tag from stack
+            for (let j = tagStack.length - 1; j >= 0; j--) {
+              if (tagStack[j] === closeTagName) {
+                tagStack.splice(j, 1)
+                break
+              }
+            }
+            balancedStr += substr.substring(i, closeTagEnd + 1)
+            i = closeTagEnd + 1
+            continue
+          }
+        } else if (substr.substr(i, 2) === '<!' || (substr.indexOf('/>', i) !== -1 && substr.indexOf('/>', i) < substr.indexOf('>', i))) {
+          const tagEnd = substr.indexOf('>', i)
+          if (tagEnd !== -1) {
+            balancedStr += substr.substring(i, tagEnd + 1)
+            i = tagEnd + 1
+            continue
+          }
+        } else {
+          const tagEnd = substr.indexOf('>', i)
+          if (tagEnd !== -1) {
+            const tagName = substr.substring(i + 1, (substr.indexOf(' ', i) > -1 && substr.indexOf(' ', i) < tagEnd)
+              ? substr.indexOf(' ', i)
+              : tagEnd).split(/\s/)[0]
+            tagStack.push(tagName)
+            balancedStr += substr.substring(i, tagEnd + 1)
+            i = tagEnd + 1
+            continue
+          }
+        }
+      }
+      balancedStr += substr[i]
+      i++
+    }
+
+    // Close any unclosed tags
+    while (tagStack.length > 0) {
+      const tagName = tagStack.pop()
+      balancedStr += `</${tagName}>`
+    }
+
+    // If we removed content from the beginning, add prefix
+    if (start > 0 || pre) {
+      const actualFirstOpenBracket = contentStr.indexOf('<', start > 0 ? start - 30 : 0)
+      const actualFirstMark = contentStr.indexOf('<mark>', start > 0 ? start - 30 : 0)
+
+      if (actualFirstOpenBracket !== -1 &&
+          (actualFirstMark === -1 || actualFirstOpenBracket < actualFirstMark)) {
+        pre = '...'
+      }
+    }
+
+    substr = balancedStr
+    return `${pre}${substr}${post}`
   }
 
-  const disableDiv = [
-    document.getElementById('algolia-hits'),
-    document.getElementById('algolia-pagination'),
-    document.querySelector('#algolia-info .algolia-stats')
-  ]
+  // Helper function to handle Algolia highlight results
+  const extractHighlightValue = highlightObj => {
+    if (!highlightObj) return ''
 
-  const searchClient = typeof algoliasearch === 'function' ? algoliasearch : window['algoliasearch/lite'].liteClient
-  const search = instantsearch({
-    indexName,
-    searchClient: searchClient(appId, apiKey),
-    searchFunction (helper) {
-      disableDiv.forEach(item => {
-        item.style.display = helper.state.query ? '' : 'none'
-      })
-      if (helper.state.query) helper.search()
+    if (typeof highlightObj === 'string') {
+      return highlightObj.trim()
     }
-  })
 
-  const widgets = [
-    instantsearch.widgets.configure({ hitsPerPage }),
-    instantsearch.widgets.searchBox({
-      container: '#algolia-search-input',
-      showReset: false,
-      showSubmit: false,
-      placeholder: languages.input_placeholder,
-      showLoadingIndicator: true
-    }),
-    instantsearch.widgets.hits({
-      container: '#algolia-hits',
-      templates: {
-        item (data) {
-          const link = data.permalink || (GLOBAL_CONFIG.root + data.path)
-          const result = data._highlightResult
-          const content = result.contentStripTruncate
-            ? cutContent(result.contentStripTruncate.value)
-            : result.contentStrip
-              ? cutContent(result.contentStrip.value)
-              : result.content
-                ? cutContent(result.content.value)
-                : ''
-          return `
-            <a href="${link}" class="algolia-hit-item-link">
-              <span class="algolia-hits-item-title">${result.title.value || 'no-title'}</span>
-              ${content ? `<div class="algolia-hit-item-content">${content}</div>` : ''}
-            </a>`
-        },
-        empty (data) {
-          return `<div id="algolia-hits-empty">${languages.hits_empty.replace(/\$\{query}/, data.query)}</div>`
+    if (typeof highlightObj === 'object' && highlightObj.value !== undefined) {
+      return String(highlightObj.value).trim()
+    }
+
+    return ''
+  }
+
+  // Initialize Algolia client
+  let searchClient
+
+  if (window['algoliasearch/lite'] && typeof window['algoliasearch/lite'].liteClient === 'function') {
+    searchClient = window['algoliasearch/lite'].liteClient(appId, apiKey)
+  } else if (typeof window.algoliasearch === 'function') {
+    searchClient = window.algoliasearch(appId, apiKey)
+  } else {
+    return console.error('Algolia search client not found!')
+  }
+
+  if (!searchClient) {
+    return console.error('Failed to initialize Algolia search client')
+  }
+
+  // Search state
+  let currentQuery = ''
+
+  // Show loading state
+  const showLoading = show => {
+    const loadingIndicator = document.getElementById('loading-status')
+    if (loadingIndicator) {
+      loadingIndicator.hidden = !show
+    }
+  }
+
+  // Cache frequently used elements
+  const elements = {
+    get searchInput () { return document.querySelector('#algolia-search-input .ais-SearchBox-input') },
+    get hits () { return document.getElementById('algolia-hits') },
+    get hitsEmpty () { return document.getElementById('algolia-hits-empty') },
+    get hitsList () { return document.querySelector('#algolia-hits .ais-Hits-list') },
+    get hitsWrapper () { return document.querySelector('#algolia-hits .ais-Hits') },
+    get pagination () { return document.getElementById('algolia-pagination') },
+    get paginationList () { return document.querySelector('#algolia-pagination .ais-Pagination-list') },
+    get stats () { return document.querySelector('#algolia-info .ais-Stats-text') },
+  }
+
+  // Show/hide search results area
+  const toggleResultsVisibility = hasResults => {
+    elements.pagination.style.display = hasResults ? '' : 'none'
+    elements.stats.style.display = hasResults ? '' : 'none'
+  }
+
+  // Render search results
+  const renderHits = (hits, query, page = 0) => {
+    if (hits.length === 0 && query) {
+      elements.hitsEmpty.textContent = languages.hits_empty.replace(/\$\{query}/, query)
+      elements.hitsEmpty.style.display = ''
+      elements.hitsWrapper.style.display = 'none'
+      elements.stats.style.display = 'none'
+      return
+    }
+
+    elements.hitsEmpty.style.display = 'none'
+
+    const hitsHTML = hits.map((hit, index) => {
+      const itemNumber = page * hitsPerPage + index + 1
+      const link = hit.permalink || (GLOBAL_CONFIG.root + hit.path)
+      const result = hit._highlightResult || hit
+
+      // Content extraction
+      let content = ''
+      try {
+        if (result.contentStripTruncate) {
+          content = cutContent(result.contentStripTruncate)
+        } else if (result.contentStrip) {
+          content = cutContent(result.contentStrip)
+        } else if (result.content) {
+          content = cutContent(result.content)
+        } else if (hit.contentStripTruncate) {
+          content = cutContent(hit.contentStripTruncate)
+        } else if (hit.contentStrip) {
+          content = cutContent(hit.contentStrip)
+        } else if (hit.content) {
+          content = cutContent(hit.content)
+        }
+      } catch (error) {
+        content = ''
+      }
+
+      // Title handling
+      let title = 'no-title'
+      try {
+        if (result.title) {
+          title = extractHighlightValue(result.title) || 'no-title'
+        } else if (hit.title) {
+          title = extractHighlightValue(hit.title) || 'no-title'
+        }
+
+        if (!title || title === 'no-title') {
+          if (typeof hit.title === 'string' && hit.title.trim()) {
+            title = hit.title.trim()
+          } else if (hit.title && typeof hit.title === 'object' && hit.title.value) {
+            title = String(hit.title.value).trim() || 'no-title'
+          } else {
+            title = 'no-title'
+          }
+        }
+      } catch (error) {
+        title = 'no-title'
+      }
+
+      return `
+        <li class="ais-Hits-item" value="${itemNumber}">
+          <a href="${link}" class="algolia-hit-item-link">
+            <span class="algolia-hits-item-title">${title}</span>
+            ${content ? `<div class="algolia-hit-item-content">${content}</div>` : ''}
+          </a>
+        </li>`
+    }).join('')
+
+    elements.hitsList.innerHTML = hitsHTML
+    elements.hitsWrapper.style.display = query ? '' : 'none'
+
+    if (hits.length > 0) {
+      elements.stats.style.display = ''
+    }
+  }
+
+  // Render pagination
+  const renderPagination = (page, nbPages) => {
+    if (nbPages <= 1) {
+      elements.pagination.style.display = 'none'
+      elements.paginationList.innerHTML = ''
+      return
+    }
+
+    elements.pagination.style.display = 'block'
+
+    const isFirstPage = page === 0
+    const isLastPage = page === nbPages - 1
+
+    // Responsive page display
+    const isMobile = window.innerWidth < 768
+    const maxVisiblePages = isMobile ? 3 : 5
+    let startPage = Math.max(0, page - Math.floor(maxVisiblePages / 2))
+    const endPage = Math.min(nbPages - 1, startPage + maxVisiblePages - 1)
+
+    // Adjust starting page to maintain max visible pages
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(0, endPage - maxVisiblePages + 1)
+    }
+
+    let pagesHTML = ''
+
+    // Only add ellipsis and first page when there are many pages
+    if (nbPages > maxVisiblePages && startPage > 0) {
+      pagesHTML += `
+        <li class="ais-Pagination-item ais-Pagination-item--page">
+          <a class="ais-Pagination-link" aria-label="Page 1" href="#" data-page="0">1</a>
+        </li>`
+      if (startPage > 1) {
+        pagesHTML += `
+          <li class="ais-Pagination-item ais-Pagination-item--ellipsis">
+            <span class="ais-Pagination-link">...</span>
+          </li>`
+      }
+    }
+
+    // Add middle page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      const isSelected = i === page
+      if (isSelected) {
+        pagesHTML += `
+          <li class="ais-Pagination-item ais-Pagination-item--page ais-Pagination-item--selected">
+            <span class="ais-Pagination-link" aria-label="Page ${i + 1}">${i + 1}</span>
+          </li>`
+      } else {
+        pagesHTML += `
+          <li class="ais-Pagination-item ais-Pagination-item--page">
+            <a class="ais-Pagination-link" aria-label="Page ${i + 1}" href="#" data-page="${i}">${i + 1}</a>
+          </li>`
+      }
+    }
+
+    // Only add ellipsis and last page when there are many pages
+    if (nbPages > maxVisiblePages && endPage < nbPages - 1) {
+      if (endPage < nbPages - 2) {
+        pagesHTML += `
+          <li class="ais-Pagination-item ais-Pagination-item--ellipsis">
+            <span class="ais-Pagination-link">...</span>
+          </li>`
+      }
+      pagesHTML += `
+        <li class="ais-Pagination-item ais-Pagination-item--page">
+          <a class="ais-Pagination-link" aria-label="Page ${nbPages}" href="#" data-page="${nbPages - 1}">${nbPages}</a>
+        </li>`
+    }
+
+    if (nbPages > 1) {
+      elements.paginationList.innerHTML = `
+            <li class="ais-Pagination-item ais-Pagination-item--previousPage ${isFirstPage ? 'ais-Pagination-item--disabled' : ''}">
+              ${isFirstPage
+                ? '<span class="ais-Pagination-link ais-Pagination-link--disabled" aria-label="Previous Page"><i class="fas fa-angle-left"></i></span>'
+                : `<a class="ais-Pagination-link" aria-label="Previous Page" href="#" data-page="${page - 1}"><i class="fas fa-angle-left"></i></a>`
+              }
+            </li>
+            ${pagesHTML}
+            <li class="ais-Pagination-item ais-Pagination-item--nextPage ${isLastPage ? 'ais-Pagination-item--disabled' : ''}">
+              ${isLastPage
+                ? '<span class="ais-Pagination-link ais-Pagination-link--disabled" aria-label="Next Page"><i class="fas fa-angle-right"></i></span>'
+                : `<a class="ais-Pagination-link" aria-label="Next Page" href="#" data-page="${page + 1}"><i class="fas fa-angle-right"></i></a>`
+              }
+            </li>`
+      elements.pagination.style.display = currentQuery ? '' : 'none'
+    } else {
+      elements.pagination.style.display = 'none'
+    }
+  }
+
+  // Render statistics
+  const renderStats = (nbHits, processingTimeMS, query) => {
+    if (query) {
+      const stats = languages.hits_stats
+        .replace(/\$\{hits}/, nbHits)
+        .replace(/\$\{time}/, processingTimeMS)
+      elements.stats.innerHTML = `<hr>${stats}`
+      elements.stats.style.display = ''
+    } else {
+      elements.stats.style.display = 'none'
+    }
+  }
+
+  // Perform search
+  const performSearch = async (query, page = 0) => {
+    if (!query.trim()) {
+      currentQuery = ''
+      renderHits([], '', 0)
+      renderPagination(0, 0)
+      renderStats(0, 0, '')
+      toggleResultsVisibility(false)
+      return
+    }
+
+    showLoading(true)
+    currentQuery = query
+
+    try {
+      let result
+
+      if (searchClient && typeof searchClient.search === 'function') {
+        // v5 multi-index search
+        const searchResult = await searchClient.search([{
+          indexName,
+          query,
+          params: {
+            page,
+            hitsPerPage,
+            highlightPreTag: '<mark>',
+            highlightPostTag: '</mark>',
+            attributesToHighlight: ['title', 'content', 'contentStrip', 'contentStripTruncate']
+          }
+        }])
+        result = searchResult.results[0]
+      } else if (searchClient && typeof searchClient.initIndex === 'function') {
+        // v4 single-index search
+        const index = searchClient.initIndex(indexName)
+        result = await index.search(query, {
+          page,
+          hitsPerPage,
+          highlightPreTag: '<mark>',
+          highlightPostTag: '</mark>',
+          attributesToHighlight: ['title', 'content', 'contentStrip', 'contentStripTruncate']
+        })
+      } else {
+        throw new Error('Algolia: No compatible search method available')
+      }
+
+      renderHits(result.hits || [], query, page)
+
+      const actualNbPages = result.nbHits <= hitsPerPage ? 1 : (result.nbPages || 0)
+      renderPagination(page, actualNbPages)
+      renderStats(result.nbHits || 0, result.processingTimeMS || 0, query)
+
+      const hasResults = result.hits && result.hits.length > 0
+      toggleResultsVisibility(hasResults)
+
+      // Refresh Pjax links
+      if (window.pjax) {
+        window.pjax.refresh(document.getElementById('algolia-hits'))
+      }
+    } catch (error) {
+      console.error('Algolia search error:', error)
+      renderHits([], query, page)
+      renderPagination(0, 0)
+      renderStats(0, 0, query)
+    } finally {
+      showLoading(false)
+    }
+  }
+
+  // Debounced search
+  let searchTimeout
+  const debouncedSearch = (query, delay = 300) => {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => performSearch(query), delay)
+  }
+
+  // Initialize search box and events
+  const initializeSearch = () => {
+    showLoading(false)
+
+    if (elements.searchInput) {
+      elements.searchInput.addEventListener('input', e => {
+        const query = e.target.value
+        debouncedSearch(query)
+      })
+    }
+
+    const searchForm = document.querySelector('#algolia-search-input .ais-SearchBox-form')
+    if (searchForm) {
+      searchForm.addEventListener('submit', e => {
+        e.preventDefault()
+        const query = elements.searchInput.value
+        performSearch(query)
+      })
+    }
+
+    // Pagination event delegation
+    elements.pagination.addEventListener('click', e => {
+      e.preventDefault()
+      const link = e.target.closest('a[data-page]')
+      if (link) {
+        const page = parseInt(link.dataset.page, 10)
+        if (!isNaN(page) && currentQuery) {
+          performSearch(currentQuery, page)
         }
       }
-    }),
-    instantsearch.widgets.stats({
-      container: '#algolia-info > .algolia-stats',
-      templates: {
-        text (data) {
-          const stats = languages.hits_stats
-            .replace(/\$\{hits}/, data.nbHits)
-            .replace(/\$\{time}/, data.processingTimeMS)
-          return `<hr>${stats}`
-        }
-      }
-    }),
-    /****** 去掉默认widgets ******/
-    // instantsearch.widgets.poweredBy({
-    //   container: '#algolia-info > .algolia-poweredBy'
-    // }),
-    instantsearch.widgets.pagination({
-      container: '#algolia-pagination',
-      totalPages: 5,
-      templates: {
-        first: '<i class="fas fa-angle-double-left"></i>',
-        last: '<i class="fas fa-angle-double-right"></i>',
-        previous: '<i class="fas fa-angle-left"></i>',
-        next: '<i class="fas fa-angle-right"></i>'
-      }
     })
-  ]
 
-  search.addWidgets(widgets)
+    // Initial state
+    toggleResultsVisibility(false)
+  }
 
-  /****** 自定义 PowerBy ***********/
-  /****** https://www.algolia.com/doc/api-reference/widgets/powered-by/js/#connector ***********/
-  // Create the render function
-
-  const renderPoweredBy = (renderOptions, isFirstRender) => {
-    const { url, widgetParams } = renderOptions;
-    const target = "https://www.algolia.com/" // 目标跳转地址
-    const midPage = "/go.html?u=" + btoa(target) // 中间页处理地址
-    const svg = `<svg width="77" height="19" aria-label="Algolia" role="img" id="Layer_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2196.2 500"><defs><style>.cls-1,.cls-2{fill:#2b5dff;}.cls-2{fill-rule:evenodd;}</style></defs><path d="M1070.38,275.3V5.91c0-3.63-3.24-6.39-6.82-5.83l-50.46,7.94c-2.87,.45-4.99,2.93-4.99,5.84l.17,273.22c0,12.92,0,92.7,95.97,95.49,3.33,.1,6.09-2.58,6.09-5.91v-40.78c0-2.96-2.19-5.51-5.12-5.84-34.85-4.01-34.85-47.57-34.85-54.72Z" class="cls-2"></path><rect x="1845.88" y="104.73" width="62.58" height="277.9" rx="5.9" ry="5.9" class="cls-1"></rect><path d="M1851.78,71.38h50.77c3.26,0,5.9-2.64,5.9-5.9V5.9c0-3.62-3.24-6.39-6.82-5.83l-50.77,7.95c-2.87,.45-4.99,2.92-4.99,5.83v51.62c0,3.26,2.64,5.9,5.9,5.9Z" class="cls-2"></path><path d="M1764.03,275.3V5.91c0-3.63-3.24-6.39-6.82-5.83l-50.46,7.94c-2.87,.45-4.99,2.93-4.99,5.84l.17,273.22c0,12.92,0,92.7,95.97,95.49,3.33,.1,6.09-2.58,6.09-5.91v-40.78c0-2.96-2.19-5.51-5.12-5.84-34.85-4.01-34.85-47.57-34.85-54.72Z" class="cls-2"></path><path d="M1631.95,142.72c-11.14-12.25-24.83-21.65-40.78-28.31-15.92-6.53-33.26-9.85-52.07-9.85-18.78,0-36.15,3.17-51.92,9.85-15.59,6.66-29.29,16.05-40.76,28.31-11.47,12.23-20.38,26.87-26.76,44.03-6.38,17.17-9.24,37.37-9.24,58.36,0,20.99,3.19,36.87,9.55,54.21,6.38,17.32,15.14,32.11,26.45,44.36,11.29,12.23,24.83,21.62,40.6,28.46,15.77,6.83,40.12,10.33,52.4,10.48,12.25,0,36.78-3.82,52.7-10.48,15.92-6.68,29.46-16.23,40.78-28.46,11.29-12.25,20.05-27.04,26.25-44.36,6.22-17.34,9.24-33.22,9.24-54.21,0-20.99-3.34-41.19-10.03-58.36-6.38-17.17-15.14-31.8-26.43-44.03Zm-44.43,163.75c-11.47,15.75-27.56,23.7-48.09,23.7-20.55,0-36.63-7.8-48.1-23.7-11.47-15.75-17.21-34.01-17.21-61.2,0-26.89,5.59-49.14,17.06-64.87,11.45-15.75,27.54-23.52,48.07-23.52,20.55,0,36.63,7.78,48.09,23.52,11.47,15.57,17.36,37.98,17.36,64.87,0,27.19-5.72,45.3-17.19,61.2Z" class="cls-2"></path><path d="M894.42,104.73h-49.33c-48.36,0-90.91,25.48-115.75,64.1-14.52,22.58-22.99,49.63-22.99,78.73,0,44.89,20.13,84.92,51.59,111.1,2.93,2.6,6.05,4.98,9.31,7.14,12.86,8.49,28.11,13.47,44.52,13.47,1.23,0,2.46-.03,3.68-.09,.36-.02,.71-.05,1.07-.07,.87-.05,1.75-.11,2.62-.2,.34-.03,.68-.08,1.02-.12,.91-.1,1.82-.21,2.73-.34,.21-.03,.42-.07,.63-.1,32.89-5.07,61.56-30.82,70.9-62.81v57.83c0,3.26,2.64,5.9,5.9,5.9h50.42c3.26,0,5.9-2.64,5.9-5.9V110.63c0-3.26-2.64-5.9-5.9-5.9h-56.32Zm0,206.92c-12.2,10.16-27.97,13.98-44.84,15.12-.16,.01-.33,.03-.49,.04-1.12,.07-2.24,.1-3.36,.1-42.24,0-77.12-35.89-77.12-79.37,0-10.25,1.96-20.01,5.42-28.98,11.22-29.12,38.77-49.74,71.06-49.74h49.33v142.83Z" class="cls-2"></path><path d="M2133.97,104.73h-49.33c-48.36,0-90.91,25.48-115.75,64.1-14.52,22.58-22.99,49.63-22.99,78.73,0,44.89,20.13,84.92,51.59,111.1,2.93,2.6,6.05,4.98,9.31,7.14,12.86,8.49,28.11,13.47,44.52,13.47,1.23,0,2.46-.03,3.68-.09,.36-.02,.71-.05,1.07-.07,.87-.05,1.75-.11,2.62-.2,.34-.03,.68-.08,1.02-.12,.91-.1,1.82-.21,2.73-.34,.21-.03,.42-.07,.63-.1,32.89-5.07,61.56-30.82,70.9-62.81v57.83c0,3.26,2.64,5.9,5.9,5.9h50.42c3.26,0,5.9-2.64,5.9-5.9V110.63c0-3.26-2.64-5.9-5.9-5.9h-56.32Zm0,206.92c-12.2,10.16-27.97,13.98-44.84,15.12-.16,.01-.33,.03-.49,.04-1.12,.07-2.24,.1-3.36,.1-42.24,0-77.12-35.89-77.12-79.37,0-10.25,1.96-20.01,5.42-28.98,11.22-29.12,38.77-49.74,71.06-49.74h49.33v142.83Z" class="cls-2"></path><path d="M1314.05,104.73h-49.33c-48.36,0-90.91,25.48-115.75,64.1-11.79,18.34-19.6,39.64-22.11,62.59-.58,5.3-.88,10.68-.88,16.14s.31,11.15,.93,16.59c4.28,38.09,23.14,71.61,50.66,94.52,2.93,2.6,6.05,4.98,9.31,7.14,12.86,8.49,28.11,13.47,44.52,13.47h0c17.99,0,34.61-5.93,48.16-15.97,16.29-11.58,28.88-28.54,34.48-47.75v50.26h-.11v11.08c0,21.84-5.71,38.27-17.34,49.36-11.61,11.08-31.04,16.63-58.25,16.63-11.12,0-28.79-.59-46.6-2.41-2.83-.29-5.46,1.5-6.27,4.22l-12.78,43.11c-1.02,3.46,1.27,7.02,4.83,7.53,21.52,3.08,42.52,4.68,54.65,4.68,48.91,0,85.16-10.75,108.89-32.21,21.48-19.41,33.15-48.89,35.2-88.52V110.63c0-3.26-2.64-5.9-5.9-5.9h-56.32Zm0,64.1s.65,139.13,0,143.36c-12.08,9.77-27.11,13.59-43.49,14.7-.16,.01-.33,.03-.49,.04-1.12,.07-2.24,.1-3.36,.1-1.32,0-2.63-.03-3.94-.1-40.41-2.11-74.52-37.26-74.52-79.38,0-10.25,1.96-20.01,5.42-28.98,11.22-29.12,38.77-49.74,71.06-49.74h49.33Z" class="cls-2"></path><path d="M249.83,0C113.3,0,2,110.09,.03,246.16c-2,138.19,110.12,252.7,248.33,253.5,42.68,.25,83.79-10.19,120.3-30.03,3.56-1.93,4.11-6.83,1.08-9.51l-23.38-20.72c-4.75-4.21-11.51-5.4-17.36-2.92-25.48,10.84-53.17,16.38-81.71,16.03-111.68-1.37-201.91-94.29-200.13-205.96,1.76-110.26,92-199.41,202.67-199.41h202.69V407.41l-115-102.18c-3.72-3.31-9.42-2.66-12.42,1.31-18.46,24.44-48.53,39.64-81.93,37.34-46.33-3.2-83.87-40.5-87.34-86.81-4.15-55.24,39.63-101.52,94-101.52,49.18,0,89.68,37.85,93.91,85.95,.38,4.28,2.31,8.27,5.52,11.12l29.95,26.55c3.4,3.01,8.79,1.17,9.63-3.3,2.16-11.55,2.92-23.58,2.07-35.92-4.82-70.34-61.8-126.93-132.17-131.26-80.68-4.97-148.13,58.14-150.27,137.25-2.09,77.1,61.08,143.56,138.19,145.26,32.19,.71,62.03-9.41,86.14-26.95l150.26,133.2c6.44,5.71,16.61,1.14,16.61-7.47V9.48C499.66,4.25,495.42,0,490.18,0H249.83Z" class="cls-1"></path></svg>`
-    widgetParams.container.innerHTML = `<a href="${midPage}" target="_blank" rel="external nofollow noopener noreferrer">${svg}</a>`; // 这是我使用的中间页
-  };
-
-  // Create the custom widget
-  const customPoweredBy = instantsearch.connectors.connectPoweredBy(
-      renderPoweredBy
-  );
-
-  // Instantiate the custom widget
-  search.addWidgets([
-    customPoweredBy({
-      container: document.querySelector('#algolia-info > .algolia-poweredBy'),
-    })
-  ]);
-
-  search.start()
+  // Initialize
+  initializeSearch()
   searchClickFn()
   searchFnOnce()
 
@@ -191,10 +559,4 @@ window.addEventListener('load', () => {
     if (!btf.isHidden($searchMask)) closeSearch()
     searchClickFn()
   })
-
-  if (window.pjax) {
-    search.on('render', () => {
-      window.pjax.refresh(document.getElementById('algolia-hits'))
-    })
-  }
 })
