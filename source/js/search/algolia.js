@@ -550,6 +550,16 @@ window.addEventListener('load', () => {
     toggleResultsVisibility(false)
   }
 
+    // 修改 Algolia Power By 指向的地址
+    const algoliaLink = document.querySelector('#algolia-info a.algolia-poweredBy');
+    if (algoliaLink) {
+        // 将链接修改为你想要的 URL
+        const target = "https://www.algolia.com/?utm_source=algoliasearch.js&utm_medium=website&utm_content=localhost&utm_campaign=poweredby" // 目标跳转地址
+        const midPage = "/go.html?u=" + btoa(target) // 中间页处理地址
+        algoliaLink.href = midPage; // 这里填写你想要的新链接
+        algoliaLink.rel = 'external nofollow noopener noreferrer'
+    }
+
   // Initialize
   initializeSearch()
   searchClickFn()
