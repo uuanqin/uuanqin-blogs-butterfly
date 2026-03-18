@@ -68,6 +68,22 @@
       span
         padding-left: 10px
 
+    #custom-img-btn
+      display: block
+      margin-top: 14px
+      background-color: #45bcf8  // 固定你要的按钮颜色
+      color: #fff               // 文字图标白色（最协调）
+      text-align: center
+      line-height: 2.4
+      addBorderRadius(7)
+      @extend .btn-effects      // 继承原按钮动画效果
+
+      &:hover
+        background-color: #45bcf8  // hover 也保持不变色
+
+      span
+        padding-left: 10px      // 和原按钮一样的文字间距
+
   .item-headline
     padding-bottom: 6px
     font-size: 1.2em
