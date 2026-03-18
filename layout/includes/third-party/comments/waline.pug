@@ -10,6 +10,13 @@ script.
     const destroyWaline = ele => ele.destroy()
 
     const initWaline = (Fn, el = document, path = window.location.pathname) => {
+
+      // 处理路径的逻辑，参考 https://waline.js.org/reference/client/props.html#path
+      let processedPath = path
+        .replace(/\/index\.html$/, '/')      // 移除 index.html
+        .replace(/\.html$/, '')             // 移除其他 .html 后缀
+        .replace(/([^\/])$/, '$1/');        // 结尾无斜杠则自动加斜杠
+
       const waline = Fn({
         el: el.querySelector('#waline-wrap'),
         serverURL: '!{serverURL}',
@@ -17,7 +24,7 @@ script.
         dark: 'html[data-theme="dark"]',
         comment: !{lazyload ? false : count},
         ...option,
-        path: isShuoshuo ? path : (option && option.path) || path
+        path: isShuoshuo ? path : (option && option.path) || processedPath
       })
 
       if (isShuoshuo) {
