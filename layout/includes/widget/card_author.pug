@@ -21,10 +21,6 @@ if theme.aside.card_author.enable
         i(class=theme.aside.card_author.button.icon)
         span=theme.aside.card_author.button.text
 
-    a#custom-img-btn(href="https://graph.qq.com/oauth2.0/authorize?response_type=code&client_id=1903542082&redirect_uri=Callback&state=123456" target="_blank")
-      i(class="fa-brands fa-qq")
-      span="使用 QQ 登录"
-
     if(theme.social)
       .card-info-social-icons
         !=partial('includes/header/social', {}, {cache: true})
