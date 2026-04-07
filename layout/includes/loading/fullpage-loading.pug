@@ -26,6 +26,9 @@ script.
 
     preloader.initLoading()
 
+    // 注释掉自动移除逻辑
+    // 我们不希望它在 window.onload 时自动消失，我们要手动控制
+    /*
     if (document.readyState === 'complete') {
       preloader.endLoading()
     } else {
@@ -34,6 +37,10 @@ script.
       // Add timeout protection: force end after 7 seconds
       setTimeout(preloader.endLoading, 7000)
     }
+    */
+
+    // 暴露到全局，让外部 JS (Keycloak) 可以调用
+    window.endPreloader = preloader.endLoading
 
     if (!{theme.pjax && theme.pjax.enable}) {
       btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
