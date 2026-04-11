@@ -1,0 +1,25 @@
+#loading-box
+  .loading-left-bg
+  .loading-right-bg
+  .ocean-wrapper
+    .ocean
+      .wave
+        svg(xmlns='http://www.w3.org/2000/svg', viewBox='0 0 1600 198', width='1600', height='198')
+          defs
+            linearGradient(id='wave-gradient-1', x1='50%', x2='50%', y1='-10.959%', y2='100%')
+              //- 使用变量控制渐变色
+              stop(stop-color='var(--wave-top)', stop-opacity='.25', offset='0%')
+              stop(stop-color='var(--ocean-color)', offset='100%')
+          path(fill='url(#wave-gradient-1)', fill-rule='evenodd', d='M.005 121C311 121 409.898-.25 811 0c400 0 500 121 789 121v77H0s.005-48 .005-77z', transform='matrix(-1 0 0 1 1600 0)')
+        svg(xmlns='http://www.w3.org/2000/svg', viewBox='0 0 1600 198', width='1600', height='198')
+          path(fill='url(#wave-gradient-1)', fill-rule='evenodd', d='M.005 121C311 121 409.898-.25 811 0c400 0 500 121 789 121v77H0s.005-48 .005-77z', transform='matrix(-1 0 0 1 1600 0)')
+
+      .wave
+        svg(xmlns='http://www.w3.org/2000/svg', viewBox='0 0 1600 198', width='1600', height='198')
+          defs
+            linearGradient(id='wave-gradient-2', x1='50%', x2='50%', y1='-10.959%', y2='100%')
+              stop(stop-color='var(--wave-top)', stop-opacity='.25', offset='0%')
+              stop(stop-color='var(--ocean-color)', offset='100%')
+          path(fill='url(#wave-gradient-2)', fill-rule='evenodd', d='M.005 121C311 121 409.898-.25 811 0c400 0 500 121 789 121v77H0s.005-48 .005-77z', transform='matrix(-1 0 0 1 1600 0)')
+        svg(xmlns='http://www.w3.org/2000/svg', viewBox='0 0 1600 198', width='1600', height='198')
+          path(fill='url(#wave-gradient-2)', fill-rule='evenodd', d='M.005 121C311 121 409.898-.25 811 0c400 0 500 121 789 121v77H0s.005-48 .005-77z', transform='matrix(-1 0 0 1 1600 0)')

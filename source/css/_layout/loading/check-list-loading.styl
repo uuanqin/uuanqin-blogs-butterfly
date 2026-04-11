@@ -1,0 +1,92 @@
+gold = #FFB900
+coral = #FC636B
+brightCoral = #FF6D92
+
+#loading-box
+  .loading-left-bg,
+  .loading-right-bg
+    position fixed
+    z-index 1000
+    width 50%
+    height 100%
+    background linear-gradient(to top right, mix(coral, white, 90%) 10%, mix(brightCoral, white, 90%) 65%, mix(gold, white, 90%) 125%)
+  .loading-right-bg
+    right 0
+
+  .spinner-box
+    position fixed
+    z-index 1001
+    display flex
+    justify-content center
+    align-items center
+    width 100%
+    height 100vh
+
+    #page
+      opacity = 90%
+      position absolute
+      left 0
+      top 0
+      width 100%
+      height 100%
+      display flex
+      justify-content center
+      align-items center
+      background linear-gradient(to top right, mix(coral, white, opacity) 10%, mix(brightCoral, white, opacity) 65%, mix(gold, white, opacity) 125%)
+      transition opacity 1s
+      z-index -1
+
+    #phrase_box
+      display flex
+      flex-flow column
+      height 150px
+      overflow hidden
+      width 260px
+      z-index 10
+
+    #phrases
+      animation slide-phrases-upward 20s
+
+    for $i in 0..20
+      #loadingCheckCircleSVG-{$i}
+        animation fill-to-white 5000ms
+        animation-delay ($i - 1.5) * 1s
+        fill white
+        opacity 0
+
+    for $i in 0..20
+      #loadingCheckSVG-{$i}
+        animation fill-to-coral 5000ms
+        animation-delay ($i - 1.5) * 1s
+
+  &.loaded
+    .loading-left-bg
+      transition all 0.5s
+      transform translate(-100%, 0)
+    .loading-right-bg
+      transition all 0.5s
+      transform translate(100%, 0)
+    .spinner-box
+      display none
+
+// keyframes 动画名不会污染
+@keyframes slide-phrases-upward
+  for $i in 0..20
+    {$i * 5%}
+      transform translateY($i * -50px)
+
+@keyframes fill-to-white
+  0%
+    opacity 0
+  10%
+    opacity 1
+  100%
+    opacity 1
+
+@keyframes fill-to-coral
+  0%
+    fill white
+  10%
+    fill brightCoral
+  100%
+    fill brightCoral

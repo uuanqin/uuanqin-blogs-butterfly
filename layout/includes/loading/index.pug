@@ -1,5 +1,49 @@
 if theme.preloader.enable
-  if theme.preloader.source === 1
+  if theme.preloader.source === 9997
+    include ./wave-loading.pug
+  else if theme.preloader.source === 9998
+    include ./check-list-loading.pug
+  else if theme.preloader.source === 9999
     include ./fullpage-loading.pug
   else
     include ./pace.pug
+
+script.
+  (()=>{
+    const $loadingBox = document.getElementById('loading-box')
+    const $body = document.body
+    const preloader = {
+      endLoading: () => {
+        if ($loadingBox.classList.contains('loaded')) return
+        $body.style.overflow = ''
+        $loadingBox.classList.add('loaded')
+      },
+      initLoading: () => {
+        $body.style.overflow = 'hidden'
+        $loadingBox.classList.remove('loaded')
+      }
+    }
+
+    preloader.initLoading()
+
+    // 注释掉自动移除逻辑
+    // 我们不希望它在 window.onload 时自动消失，我们要手动控制
+    /*
+    if (document.readyState === 'complete') {
+      preloader.endLoading()
+    } else {
+      window.addEventListener('load', preloader.endLoading)
+      document.addEventListener('DOMContentLoaded', preloader.endLoading)
+      // Add timeout protection: force end after 7 seconds
+      setTimeout(preloader.endLoading, 7000)
+    }
+    */
+
+    // 暴露到全局，让外部 JS (Keycloak) 可以调用
+    window.endPreloader = preloader.endLoading
+
+    if (!{theme.pjax && theme.pjax.enable}) {
+      btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+      btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+    }
+  })()

@@ -1,0 +1,120 @@
+// ======================================================
+// 1. 日夜间模式变量 (一键调色盘)
+// ======================================================
+:root
+  --loading-bg: rgba(255, 255, 255, 0.2)
+  --ocean-color: #177ecd      // [日间] 海浪主体色 (你喜欢的宝蓝色)
+  --wave-top: #57BBC1         // [日间] 浪尖渐变色
+  --ocean-theme-filter: none  // 日间不需要额外滤镜
+
+[data-theme='dark']
+  --loading-bg: rgba(0, 0, 0, 0.4)
+  --ocean-color: #061a29      // [夜间] 深海主体色
+  --wave-top: #0a3d62         // [夜间] 浪尖暗色
+  // 夜间微调滤镜：如果你觉得变量改出的颜色还不够完美，可以用滤镜微调
+  --ocean-theme-filter: brightness(0.8) saturate(0.8)
+
+// ======================================================
+// 2. 结构样式 (性能优化版)
+// ======================================================
+#loading-box
+  position: fixed
+  top: 0
+  left: 0
+  width: 100vw
+  height: 100vh
+  z-index: 99999
+  display: flex
+  justify-content: center
+  align-items: center
+  pointer-events: auto
+  visibility: visible
+  background: var(--loading-bg)
+  backdrop-filter: blur(15px)
+  -webkit-backdrop-filter: blur(15px)
+  transition: background 0.5s
+
+  .ocean-wrapper
+    position: absolute
+    bottom: 0
+    left: 0
+    width: 100%
+    height: 100%
+    overflow: hidden
+    filter: var(--ocean-theme-filter)
+    transition: filter 0.5s
+
+  .ocean
+    height: 160px
+    width: 100%
+    position: absolute
+    bottom: 0
+    left: 0
+    background: var(--ocean-color) // 自动同步主体色
+    transform: translate3d(0, 0, 0)
+    transition: background 0.5s
+
+  .wave
+    position: absolute
+    top: -198px
+    width: 3200px
+    height: 198px
+    display: flex
+    will-change: transform
+    animation: wave 2.5s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite
+    transform: translate3d(0, 0, 0)
+    opacity: 1
+
+    svg
+      width: 1600px
+      height: 198px
+      flex-shrink: 0
+      display: block
+
+    &:nth-of-type(2)
+      top: -175px
+      animation: wave 2.5s cubic-bezier(0.36, 0.45, 0.63, 0.53) -0.125s infinite
+      opacity: 1
+      svg
+        animation: swell 2.5s ease -1.25s infinite
+
+  // ======================================================
+  // 3. 退出动画
+  // ======================================================
+  &.loaded
+    pointer-events: none
+    animation: container-exit 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards
+    .ocean
+      animation: ocean-exit-playful 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards
+
+// ======================================================
+// 4. 关键帧动画 (GPU 加速版)
+// ======================================================
+@keyframes container-exit
+  0%
+    backdrop-filter: blur(15px)
+    background: var(--loading-bg)
+    visibility: visible
+  100%
+    backdrop-filter: blur(0px)
+    background: rgba(255, 255, 255, 0)
+    visibility: hidden
+    display: none
+
+@keyframes ocean-exit-playful
+  0%
+    transform: translate3d(0, 0, 0)
+  100%
+    transform: translate3d(0, 250%, 0)
+
+@keyframes wave
+  0%
+    transform: translate3d(0, 0, 0)
+  100%
+    transform: translate3d(-1600px, 0, 0)
+
+@keyframes swell
+  0%, 100%
+    transform: translate3d(0, -25px, 0)
+  50%
+    transform: translate3d(0, 5px, 0)
