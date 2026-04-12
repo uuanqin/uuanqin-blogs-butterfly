@@ -3,15 +3,15 @@
 // ======================================================
 :root
   --loading-bg: rgba(255, 255, 255, 0.2)
-  --ocean-color: #177ecd      // [日间] 海浪主体色 (你喜欢的宝蓝色)
-  --wave-top: #57BBC1         // [日间] 浪尖渐变色
-  --ocean-theme-filter: none  // 日间不需要额外滤镜
+  --ocean-color: #177ecd
+  --wave-top: #57BBC1
+  --ocean-theme-filter: none
+  --wave-offset: 0s   // 新增：用于接收 JS 传递的动画时间偏移量
 
 [data-theme='dark']
   --loading-bg: rgba(0, 0, 0, 0.4)
-  --ocean-color: #061a29      // [夜间] 深海主体色
-  --wave-top: #0a3d62         // [夜间] 浪尖暗色
-  // 夜间微调滤镜：如果你觉得变量改出的颜色还不够完美，可以用滤镜微调
+  --ocean-color: #061a29
+  --wave-top: #0a3d62
   --ocean-theme-filter: brightness(0.8) saturate(0.8)
 
 // ======================================================
@@ -61,7 +61,8 @@
     height: 198px
     display: flex
     will-change: transform
-    animation: wave 2.5s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite
+    // 修改：将默认的 0s 延迟替换为 var(--wave-offset)
+    animation: wave 2.5s cubic-bezier(0.36, 0.45, 0.63, 0.53) var(--wave-offset) infinite
     transform: translate3d(0, 0, 0)
     opacity: 1
 
@@ -73,10 +74,12 @@
 
     &:nth-of-type(2)
       top: -175px
-      animation: wave 2.5s cubic-bezier(0.36, 0.45, 0.63, 0.53) -0.125s infinite
+      // 修改：结合波浪自身的错开时间 (-0.125s) 和全局偏移量
+      animation: wave 2.5s cubic-bezier(0.36, 0.45, 0.63, 0.53) calc(var(--wave-offset) - 0.125s) infinite
       opacity: 1
       svg
-        animation: swell 2.5s ease -1.25s infinite
+        // 修改：结合上下起伏的错开时间 (-1.25s) 和全局偏移量
+        animation: swell 2.5s ease calc(var(--wave-offset) - 1.25s) infinite
 
   // ======================================================
   // 3. 退出动画

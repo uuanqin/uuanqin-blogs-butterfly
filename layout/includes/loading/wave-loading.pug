@@ -1,3 +1,15 @@
+script.
+  (function() {
+    const waveDuration = 2500;
+    let waveStartTime = sessionStorage.getItem('oceanWaveStartTime');
+    if (!waveStartTime) {
+      waveStartTime = Date.now();
+      sessionStorage.setItem('oceanWaveStartTime', waveStartTime);
+    }
+    const elapsed = (Date.now() - parseInt(waveStartTime)) % waveDuration;
+    document.documentElement.style.setProperty('--wave-offset', '-' + elapsed + 'ms');
+  })();
+
 #loading-box
   .loading-left-bg
   .loading-right-bg
