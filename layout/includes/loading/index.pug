@@ -11,16 +11,59 @@ if theme.preloader.enable
 script.
   (()=>{
     const $loadingBox = document.getElementById('loading-box')
+    const $loadingHint = document.getElementById('loading-hint')
     const $body = document.body
+    let hintTimer = null
+    let forceTimer = null
     const preloader = {
       endLoading: () => {
-        if ($loadingBox.classList.contains('loaded')) return
+        if (!$loadingBox || $loadingBox.classList.contains('loaded')) return
+
+        if ($loadingHint && $loadingHint.style.display !== 'none') {
+          $loadingHint.classList.add('exit-active')
+        }
+
+        // 清理所有计时器
+        if (hintTimer) clearTimeout(hintTimer)
+        if (forceTimer) clearTimeout(forceTimer)
+
         $body.style.overflow = ''
         $loadingBox.classList.add('loaded')
       },
       initLoading: () => {
+        $loadingBox.classList.remove('loaded')
+        if (!$loadingHint) return
+
         $body.style.overflow = 'hidden'
         $loadingBox.classList.remove('loaded')
+        $loadingBox.classList.remove('allow-skip') // 重置状态
+        if ($loadingHint) {
+          $loadingHint.style.display = 'none'
+          $loadingHint.classList.remove('exit-active') // 重置类名
+        }
+
+        // 手动跳过按钮
+        hintTimer = setTimeout(() => {
+          const currentHint = document.getElementById('loading-hint')
+          const currentBox = document.getElementById('loading-box')
+          if (currentBox && !currentBox.classList.contains('loaded')) {
+            if (currentHint) currentHint.style.display = 'flex'
+            currentBox.classList.add('allow-skip') // 允许点击样式
+
+            // 绑定全屏点击事件
+            currentBox.onclick = () => {
+              preloader.endLoading()
+              currentBox.onclick = null // 点击后解绑
+            }
+          }
+        }, 7000)
+
+        forceTimer = setTimeout(() => {
+          if (!$loadingBox.classList.contains('loaded')) {
+            console.warn('Preloader: 加载超时，强制关闭')
+            preloader.endLoading()
+          }
+        }, 6000)
       }
     }
 
