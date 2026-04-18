@@ -1,39 +1,66 @@
 extends includes/layout.pug
 
 block content
+
+  if page.comments !== false && theme.comments.use
+    - var commentsJsLoad = true
+
   #post
-    if top_img === false
+    if (page.access && page.access.requires_auth) || top_img === false
       include includes/header/post-info.pug
 
-    article#article-container.container.post-content
-      if page.summary && theme.ai_summary.enable
-        include includes/post/post-summary.pug
+    if page.access && page.access.requires_auth
+      #auth-lock-placeholder.auth-placeholder
+        .lock-icon 🔒
+        h2= page.access.mode === 'strict' ? '加密文章' : '受限文章'
+        p= page.access.mode === 'strict' ? '此内容已物理加密，需验证身份获取密钥' : '访问此内容需要统一身份认证'
+        button.kc-login-btn(onclick="window.location.href=getKeycloakLoginUrl()") 统一认证登录
+
+      //- 认证内容容器
+      //- data-mode 和 data-path 用于 JS 识别逻辑
+      #auth-real-content(
+        style="display: none;"
+        data-mode=page.access.mode
+        data-path=url_for(page.path)
+      )
+        //- 如果是严格模式，page.content 此时已被 Hexo 插件替换为 AES 密文
+        //- 如果是软模式，page.content 依然是明文 HTML
+        +article_full_body()
+    else
+      //- 普通公开文章
+      +article_full_body()
+
+mixin article_full_body()
+  article#article-container.container.post-content
+    if page.summary && theme.ai_summary.enable
+      include includes/post/post-summary.pug
+
+    #auth-content-inner
       if theme.noticeOutdate.enable && page.noticeOutdate !== false
         include includes/post/outdate-notice.pug
       else
         !=page.content
 
-    include includes/post/post-copyright.pug
-    include includes/post/post-ai-info.pug
-    .tag_share
-      if (page.tags.length > 0 && theme.post_meta.post.tags)
-        .post-meta__tag-list
-          each item, index in page.tags.data
-            a(href=url_for(item.path)).post-meta__tags #[=item.name]
-      include includes/third-party/share/index.pug
+  //- 无论是否加密都显示的页脚信息（版权、标签等）
+  include includes/post/post-copyright.pug
+  include includes/post/post-ai-info.pug
+  .tag_share
+    if (page.tags.length > 0 && theme.post_meta.post.tags)
+      .post-meta__tag-list
+        each item, index in page.tags.data
+          a(href=url_for(item.path)).post-meta__tags #[=item.name]
+    include includes/third-party/share/index.pug
 
-    if theme.reward.enable && theme.reward.QR_code
-      !=partial('includes/post/reward', {}, {cache: true})
+  if theme.reward.enable && theme.reward.QR_code
+    !=partial('includes/post/reward', {}, {cache: true})
 
-    //- ad
-    if theme.ad && theme.ad.post
-      .ads-wrap!=theme.ad.post
+  if theme.ad && theme.ad.post
+    .ads-wrap!=theme.ad.post
 
-    if theme.post_pagination
-      include includes/pagination.pug
-    if theme.related_post && theme.related_post.enable
-      != related_posts(page,site.posts)
+  if theme.post_pagination
+    include includes/pagination.pug
+  if theme.related_post && theme.related_post.enable
+    != related_posts(page,site.posts)
 
-    if page.comments !== false && theme.comments.use
-      - var commentsJsLoad = true
-      !=partial('includes/third-party/comments/index', {}, {cache: true})
+  if page.comments !== false && theme.comments.use
+    !=partial('includes/third-party/comments/index', {}, {cache: true})
