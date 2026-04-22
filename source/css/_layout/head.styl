@@ -258,8 +258,20 @@
       font-size: 90%
 
       > .meta-firstline,
-      > .meta-secondline
+      > .meta-secondline,
+      > .meta-thirdline
         display: inline
+
+    .meta-thirdline
+      // 桌面端：因为换行了，第一根分隔符应该隐藏
+      > .post-meta-separator:first-child
+        display: none
+
+      +maxWidth768()
+        display: inline
+        // 移动端：当它和第二行并列时，显示第一根分隔符
+        > .post-meta-separator:first-child
+          display: inline
 
     .post-meta
       &-separator

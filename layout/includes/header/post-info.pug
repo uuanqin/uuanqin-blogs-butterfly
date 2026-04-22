@@ -147,3 +147,18 @@
               a(href=url_for(page.path) + '#post-comment')
                 span#ArtalkCount
                   i.fa-solid.fa-spinner.fa-spin
+
+    // 双链信息页
+    if page.bi_links
+      if page.bi_links.inbounds.length + page.bi_links.outbounds.length > 0
+        .meta-thirdline
+          span.post-meta-separator |
+          span.post-meta-outbounds
+            i.fa-solid.fa-right-from-bracket.fa-fw.post-meta-icon
+            span.post-meta-label= '出链:'
+            span= page.bi_links.outbounds.length
+          span.post-meta-separator |
+          span.post-meta-inbounds
+            i.fa-solid.fa-right-to-bracket.fa-fw.post-meta-icon
+            span.post-meta-label= '入链:'
+            span= page.bi_links.inbounds.length
