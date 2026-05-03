@@ -63,57 +63,96 @@ if hexo-config('waline.bg')
 .medium-zoom-overlay
   z-index: 99999 !important
 
+// 基于 hexo-config 的判断保持不变
 if hexo-config('mermaid.enable')
   .mermaid-wrap
     position: relative
     margin: 0 0 20px
-    background: var(--card-bg)
-    text-align: center
+    border: 1px solid var(--light-grey, #e2e2e2)
+    border-radius: 8px
+    background: var(--card-bg, #f7f7f7)
+    overflow: hidden
 
-    if hexo-config('mermaid.open_in_new_tab')
-      .mermaid-open-btn
-        position: absolute
-        top: 8px
-        right: 8px
-        z-index: 2
-        display: flex
-        justify-content: center
-        align-items: center
-        padding: 0
-        width: 34px
-        height: 25px
-        border: none
-        border-radius: 20%
-        background: #D3D3D3
-        box-shadow: 0 4px 10px rgba(0, 0, 0, .15)
-        color: #fff
-        font-size: 0
-        line-height: 1
-        cursor: pointer
-        transition: background .2s ease, transform .2s ease
+    // 头部 Tab 栏
+    .mermaid-header
+      display: flex
+      justify-content: space-between
+      align-items: center
+      padding: 8px 15px
+      background: var(--hltools-bg, #f0f0f0)
+      border-bottom: 1px solid var(--light-grey, #e2e2e2)
 
-        i
-          font-size: 16px
-          line-height: 1
+    .mermaid-tabs
+      display: flex
+      gap: 10px
 
-        &:hover,
-        &:focus-visible
-          outline: none
-          background: #C0C0C0
-          transform: translateY(-1px)
+    .mermaid-tab-btn
+      background: none
+      border: none
+      padding: 5px 12px
+      cursor: pointer
+      font-size: 13px
+      border-radius: 4px
+      color: var(--hltools-color, #555)
+      transition: all 0.3s
 
-    & > svg
-      max-width: 100%
-      height: 100%
+      &.active
+        background: var(--btn-hover-color, #d3d3d3) // 适配原主题的灰色激活态
+        color: var(--white, #fff)
 
-      if hexo-config('mermaid.zoom_pan')
-        cursor: grab
-        user-select: none
-        touch-action: none
+    // 预览区域
+    .mermaid-preview-container
+      position: relative
+      padding: 10px
+      background: var(--global-bg, #fff)
+      display: flex
+      justify-content: center
+      overflow: hidden
 
-        &:active
-          cursor: grabbing
+      & > svg
+        max-width: 100%
+        height: auto // 改为 auto 保证比例不失真
+        if hexo-config('mermaid.zoom_pan')
+          cursor: grab
+          user-select: none
+          touch-action: none
+          &:active
+            cursor: grabbing
 
+    // 源码区域：强制左对齐
+    .mermaid-source-container
+      display: none
+      padding: 15px
+      background: var(--global-bg, #282c34)
+      color: #abb2bf
+      font-family: $code-font, monospace
+      overflow-x: auto
+      text-align: left !important
+
+      pre
+        margin: 0
+        padding: 0 !important
+        background: transparent !important
+        text-align: left !important
+
+      code
+        display: block
+        text-align: left !important
+        white-space: pre
+
+    // 放大镜按钮
+    .mermaid-open-btn
+      cursor: pointer
+      border: none
+      background: none
+      color: var(--font-color, #555)
+      font-size: 16px
+      transition: color .2s ease
+
+      &:hover
+        color: $light-blue || #49b1f5
+
+  // 如果配置了 code_write，隐藏原始 code 块
   if hexo-config('mermaid.code_write')
     pre > code.mermaid
       display: none
